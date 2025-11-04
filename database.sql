@@ -2,7 +2,7 @@ CREATE DATABASE IF NOT EXISTS `event_system_db` DEFAULT CHARACTER SET utf8mb4 CO
 USE `event_system_db`;
 
 CREATE TABLE `users` (
-  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `id` INT NOT NULL AUTO_INCREMENT,
   `username` VARCHAR(100) NOT NULL UNIQUE,
   `email` VARCHAR(100) NOT NULL UNIQUE,
   `password` VARCHAR(255) NOT NULL,
@@ -11,21 +11,21 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `events` (
-  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `id` INT NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(255) NOT NULL,
   `description` TEXT,
   `event_date` DATETIME NOT NULL,
   `location` VARCHAR(255),
   `price` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-  `tickets_available` INT(11) NOT NULL DEFAULT 100,
+  `tickets_available` INT NOT NULL DEFAULT 100,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `bookings` (
-  `id` INT(11) NOT NULL AUTO_INCREMENT,
-  `user_id` INT(11) NOT NULL,
-  `event_id` INT(11) NOT NULL,
-  `quantity` INT(11) NOT NULL DEFAULT 1,
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `user_id` INT NOT NULL,
+  `event_id` INT NOT NULL,
+  `quantity` INT NOT NULL DEFAULT 1,
   `booking_date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `fk_bookings_user` (`user_id`),
