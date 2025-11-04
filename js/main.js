@@ -51,15 +51,19 @@ async function bookEvent() {
   const userId = localStorage.getItem('userId');
   const eventId = document.getElementById('eventId').value;
   const qty = document.getElementById('qty').value;
-
   if (!userId) {
     alert('Log in first!');
+    return;
+  }
+  const quantity = parseInt(qty, 10); 
+  if (isNaN(quantity) || quantity <= 0) {
+    alert('Please enter a valid quantity (1 or more).');
     return;
   }
   const res = await fetch('/api/api_bookings.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user_id: userId, event_id: eventId, quantity: qty })
+    body: JSON.stringify({ user_id: parseInt(userId, 10), event_id: parseInt(eventId, 10), quantity: quantity })
   });
   const data = await res.json();
 if (data.success) {
