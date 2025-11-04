@@ -6,7 +6,7 @@ async function showEvents() {
   list.innerHTML = '';
   data.forEach(e => {
     const item = document.createElement('li');
-    item.textContent = `${e.name} - ${e.date} - $${e.price}`;
+    item.textContent = `${e.name} - ${e.event_date} - $${e.price}`;
     list.appendChild(item);
   });
 }
