@@ -1,5 +1,9 @@
 <?php
 include 'db_connect.php';
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200); // 200 OK
+    exit();
+}
 $method = $_SERVER['REQUEST_METHOD'];
 $output = [];
 if ($method == 'POST') {
