@@ -40,22 +40,26 @@ if ($method == 'GET') {
         $output = ["error" => "user_id is required."];
         http_response_code(400); // 400 = Bad Request
     }
-
 } elseif ($method == 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
     if (isset($data['user_id'], $data['event_id'], $data['quantity'])) {
         $user_id = $data['user_id'];
         $event_id = $data['event_id'];
         $quantity = $data['quantity'];
-        $stmt = $conn->prepare("INSERT INTO bookings (user_id, event_id, quantity) VALUES (?, ?, ?)");
-        $stmt->bind_param("iii", $user_id, $event_id, $quantity);
-        if ($stmt->execute()) {
-            $output = ["success" => true, "message" => "Booking successful!"];
+if (!is_int($quantity) || $quantity <= 0) {
+            $output = ["success" => false, "error" => "Invalid quantity. Must be a positive number (1 or more)."];
+            http_response_code(400);
         } else {
-            $output = ["success" => false, "error" => $stmt->error];
-        }
-        $stmt->close();
+            $stmt = $conn->prepare("INSERT INTO bookings (user_id, event_id, quantity) VALUES (?, ?, ?)");
+            $stmt->bind_param("iii", $user_id, $event_id, $quantity);
 
+            if ($stmt->execute()) {
+                $output = ["success" => true, "message" => "Booking successful!"];
+            } else {
+                $output = ["success" => false, "error" => $stmt->error];
+            }
+            $stmt->close();
+        }
     } else {
         $output = ["success" => false, "error" => "Invalid data. 'user_id', 'event_id', and 'quantity' are required."];
         http_response_code(400);
