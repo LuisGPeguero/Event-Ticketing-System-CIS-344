@@ -22,7 +22,11 @@ async function signup() {
     body: JSON.stringify({ username, email, password })
   });
   const data = await res.json();
-  alert(data.message || 'Signed up!');
+  if (data.success) {
+    alert(data.message || 'Signed up!');
+  } else {
+    alert(data.error || 'Sign up failed.');
+  }
 }
 // Log in
 async function login() {
