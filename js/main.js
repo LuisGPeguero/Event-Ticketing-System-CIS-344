@@ -10,7 +10,6 @@ async function showEvents() {
     list.appendChild(item);
   });
 }
-
 // Sign up
 async function signup() {
   const username = document.getElementById('regUser').value;
@@ -22,11 +21,9 @@ async function signup() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, email, password })
   });
-
   const data = await res.json();
   alert(data.message || 'Signed up!');
 }
-
 // Log in
 async function login() {
   const username = document.getElementById('logUser').value;
@@ -37,7 +34,6 @@ async function login() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password })
   });
-
   const data = await res.json();
   if (data.success) {
     localStorage.setItem('userId', data.user.id);
@@ -46,7 +42,6 @@ async function login() {
     alert('Login failed');
   }
 }
-
 // Book an event
 async function bookEvent() {
   const userId = localStorage.getItem('userId');
@@ -57,16 +52,17 @@ async function bookEvent() {
     alert('Log in first!');
     return;
   }
-
   const res = await fetch('/api/api_bookings.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ user_id: userId, event_id: eventId, quantity: qty })
   });
-
   const data = await res.json();
-  alert(data.message || 'Booked!');
+if (data.success) {
+    alert(data.message || 'Booked!');
+  } else {
+    alert(data.error || 'Booking failed.');
+  }
 }
-
 // Run when page loads
 document.addEventListener('DOMContentLoaded', showEvents);
