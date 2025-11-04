@@ -40,7 +40,7 @@ async function login() {
 
   const data = await res.json();
   if (data.success) {
-    localStorage.setItem('userId', data.user_id);
+    localStorage.setItem('userId', data.user.id);
     alert('Login success!');
   } else {
     alert('Login failed');
