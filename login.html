@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Event Ticketing System</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- Login/Register Section -->
+  <section class="container forms">
+    <!-- Sign In Form -->
+    <div class="form signin">
+      <div class="form-content">
+        <header>Sign In</header>
+        <form onsubmit="return doLogin(event);">
+          <div class="field input-field">
+            <input type="text" id="logUser" placeholder="Username" class="signin-username input" required />
+          </div>
+
+          <div class="field input-field">
+            <input type="password" id="logPass" placeholder="Password" class="signin-password password" required />
+          </div>
+
+          <div class="form-link">
+            <a href="#" class="forgot-pass">Forgot Password?</a>
+          </div>
+
+          <div class="field input-field">
+            <button type="submit" class="signin-btn">Sign In</button>
+          </div>
+
+          <div class="form-link">
+            <span>Don't have an account yet?
+              <a href="#" class="link register-link">Register</a>
+            </span>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Register Form -->
+    <div class="form register">
+      <div class="form-content">
+        <header>Register</header>
+        <form onsubmit="return doSignup(event);">
+          <div class="field input-field">
+            <input type="text" id="regUser" placeholder="Username" class="register-username input" required />
+            <small class="hint">Hint: Username should be <strong>123</strong></small>
+          </div>
+
+          <div class="field input-field">
+            <input type="email" id="regEmail" placeholder="Email" class="register-email input" required />
+            <small class="hint">Hint: Use a valid email like <strong>user@example.com</strong></small>
+          </div>
+
+          <div class="field input-field">
+            <input type="password" id="regPass" placeholder="Password" class="register-password password" required />
+            <small class="hint">Hint: Password should be <strong>12345</strong></small>
+          </div>
+
+          <div class="field input-field">
+            <input type="password" placeholder="Confirm Password" class="register-confirm password" required />
+            <small class="hint">Hint: Must match password <strong>12345</strong></small>
+          </div>
+
+          <div class="field input-field">
+            <button type="submit" class="register-btn">Register</button>
+          </div>
+
+          <div class="form-link">
+            <span>Already have an account?
+              <a href="#" class="link signin-link">Sign In</a>
+            </span>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- Home Page -->
+  <section class="home-page hidden">
+    <button class="back-to-signin">Sign In/Register</button>
+    <h1>Events</h1>
+
+    <div class="controls">
+      <button id="my-bookings-btn" type="button">My Bookings</button>
+    </div>
+
+    <div class="events-container">
+      <h2>Events</h2>
+      <ul id="eventList" class="events-list"></ul>
+    </div>
+
+    <!-- Purchase Panel -->
+    <div id="purchase-panel" class="purchase-panel hidden">
+      <h3 id="purchase-title">Buy Tickets</h3>
+      <p id="purchase-event"></p>
+      <label for="purchase-qty">Quantity:</label>
+      <input type="number" id="purchase-qty" min="1" value="1" />
+      <div class="purchase-actions">
+        <button id="purchase-buy" type="button">Buy Tickets</button>
+        <button id="purchase-cancel" type="button">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Bookings Panel -->
+    <div id="bookings-panel" class="bookings-panel hidden">
+      <h3>My Bookings</h3>
+      <ul id="bookings-list"></ul>
+      <div class="bookings-actions">
+        <button id="bookings-close" type="button">Close</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- App script -->
+  <script src="js/main.js" defer></script>
+  <script>
+    // Minimal UI wiring while keeping original structure
+    document.addEventListener('DOMContentLoaded', () => {
+      const forms = document.querySelector('.forms');
+      const home = document.querySelector('.home-page');
+      const regLink = document.querySelector('.register-link');
+      const signLink = document.querySelector('.signin-link');
+      const backBtn = document.querySelector('.back-to-signin');
+
+      function updateGreetingUI() {
+        const backBtn = document.querySelector('.back-to-signin');
+        const uid = localStorage.getItem('userId');
+        const uname = localStorage.getItem('userName');
+        if (!backBtn) return;
+
+        // Manage signout button presence
+        let signoutBtn = document.getElementById('signout-btn');
+
+        if (uid) {
+          const greeting = uname ? `Hi ${uname}` : 'Hi';
+          backBtn.textContent = greeting;
+          // prevent navigating back when logged in
+          backBtn.onclick = (e) => { e?.preventDefault?.(); };
+          if (!signoutBtn) {
+            signoutBtn = document.createElement('button');
+            signoutBtn.id = 'signout-btn';
+            signoutBtn.className = 'signout-btn';
+            signoutBtn.textContent = 'Sign Out';
+            document.body.appendChild(signoutBtn);
+          }
+          signoutBtn.onclick = (e) => {
+            e?.preventDefault?.();
+            localStorage.removeItem('userId');
+            localStorage.removeItem('userName');
+            // restore button and remove signout
+            backBtn.textContent = 'Sign In/Register';
+            backBtn.onclick = (ev) => { ev?.preventDefault?.(); showAuth(); };
+            document.getElementById('signout-btn')?.remove();
+            showAuth();
+          };
+        } else {
+          backBtn.textContent = 'Sign In/Register';
+          backBtn.onclick = (e) => { e?.preventDefault?.(); showAuth(); };
+          document.getElementById('signout-btn')?.remove();
+        }
+      }
+
+      // Enhance events with click-to-buy and bookings view
+      let selectedEvent = null;
+
+      async function buildClickableEvents() {
+        const list = document.getElementById('eventList');
+        if (!list) return;
+        list.innerHTML = 'Loading events...';
+        try {
+          const res = await fetch('/api/api_events.php');
+          const data = await res.json();
+          list.innerHTML = '';
+          data.forEach(e => {
+            const li = document.createElement('li');
+            li.className = 'event-card';
+            li.innerHTML = `<h3>${e.name}</h3><p>${e.event_date}</p><p>$${e.price}</p>`;
+            li.addEventListener('click', () => openPurchase(e));
+            list.appendChild(li);
+          });
+          if (!data.length) list.innerHTML = '<li>No upcoming events.</li>';
+        } catch (_) {
+          list.innerHTML = '<li>Error loading events.</li>';
+        }
+      }
+
+      function ensureMyBookingsButton() {
+        let btn = document.getElementById('my-bookings-btn');
+        if (!btn) {
+          const controls = document.querySelector('.home-page .controls');
+          if (controls) {
+            btn = document.createElement('button');
+            btn.id = 'my-bookings-btn';
+            btn.type = 'button';
+            btn.textContent = 'My Bookings';
+            controls.appendChild(btn);
+          }
+        }
+        if (btn && !btn._wired) {
+          btn.addEventListener('click', showBookings);
+          btn._wired = true;
+        }
+      }
+
+      function openPurchase(e) {
+        selectedEvent = e;
+        document.getElementById('purchase-event').textContent = `${e.name} - ${e.event_date} - $${e.price}`;
+        document.getElementById('purchase-qty').value = 1;
+        document.getElementById('purchase-panel').classList.remove('hidden');
+      }
+
+      async function doBuy() {
+        const userId = localStorage.getItem('userId');
+        if (!userId) { alert('Please log in first.'); return; }
+        if (!selectedEvent) { alert('Select an event first.'); return; }
+        const qty = parseInt(document.getElementById('purchase-qty').value, 10);
+        if (!Number.isInteger(qty) || qty <= 0) { alert('Enter a valid quantity (1 or more).'); return; }
+        try {
+          const res = await fetch('/api/api_bookings.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: parseInt(userId, 10), event_id: parseInt(selectedEvent.id, 10), quantity: qty })
+          });
+          const data = await res.json();
+          if (data.success) {
+            alert(data.message || 'Booked!');
+            document.getElementById('purchase-panel').classList.add('hidden');
+          } else {
+            alert(data.error || 'Booking failed.');
+          }
+        } catch (_) {
+          alert('Network error while booking.');
+        }
+      }
+
+      async function showBookings() {
+        const userId = localStorage.getItem('userId');
+        if (!userId) { alert('Please log in first.'); return; }
+        const panel = document.getElementById('bookings-panel');
+        const list = document.getElementById('bookings-list');
+        list.innerHTML = 'Loading...';
+        panel.classList.remove('hidden');
+        try {
+          const res = await fetch(`/api/api_bookings.php?user_id=${encodeURIComponent(userId)}`);
+          const data = await res.json();
+          list.innerHTML = '';
+          if (!Array.isArray(data) || !data.length) {
+            list.innerHTML = '<li>No bookings yet.</li>';
+          } else {
+            data.forEach(b => {
+              const li = document.createElement('li');
+              li.textContent = `${b.event_name} (${b.event_date}) x${b.quantity}`;
+              list.appendChild(li);
+            });
+          }
+        } catch (_) {
+          list.innerHTML = '<li>Error loading bookings.</li>';
+        }
+      }
+
+      function showHome() {
+        forms?.classList.add('hidden');
+        home?.classList.remove('hidden');
+        updateGreetingUI();
+        // Build clickable event cards (keep original showEvents but override with clickable list)
+        buildClickableEvents();
+        // Ensure the My Bookings button exists and is wired
+        ensureMyBookingsButton();
+      }
+
+      function showAuth() {
+        home?.classList.add('hidden');
+        forms?.classList.remove('hidden');
+        updateGreetingUI();
+      }
+
+      regLink?.addEventListener('click', (e) => { e.preventDefault(); forms?.classList.add('show-register'); });
+      signLink?.addEventListener('click', (e) => { e.preventDefault(); forms?.classList.remove('show-register'); });
+      backBtn?.addEventListener('click', (e) => { e.preventDefault(); if (!localStorage.getItem('userId')) showAuth(); });
+
+      if (localStorage.getItem('userId')) {
+        showHome();
+      }
+      updateGreetingUI();
+
+      // Wire purchase panel buttons
+      document.getElementById('purchase-buy')?.addEventListener('click', doBuy);
+      document.getElementById('purchase-cancel')?.addEventListener('click', () => {
+        document.getElementById('purchase-panel').classList.add('hidden');
+      });
+      // Wire My Bookings (guarded and ensured)
+      ensureMyBookingsButton();
+      document.getElementById('bookings-close')?.addEventListener('click', () => {
+        document.getElementById('bookings-panel').classList.add('hidden');
+      });
+
+      // Handle BFCache and very fast reloads
+      window.addEventListener('pageshow', () => {
+        // Rebuild UI deterministically after bfcache restore or quick refresh
+        if (localStorage.getItem('userId')) {
+          showHome();
+        } else {
+          updateGreetingUI();
+        }
+        ensureMyBookingsButton();
+      });
+
+      window.doSignup = async function doSignup(e) {
+        e?.preventDefault?.();
+        const username = document.getElementById('regUser')?.value || '';
+        const email = document.getElementById('regEmail')?.value || '';
+        const password = document.getElementById('regPass')?.value || '';
+        if (!username || !email || !password) {
+          alert('Please fill in username, email, and password.');
+          return false;
+        }
+        try {
+          const res = await fetch('/api/api_users.php?action=register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, email, password })
+          });
+          const data = await res.json();
+          if (data.success) {
+            alert(data.message || 'Registration successful. Please sign in.');
+            forms?.classList.remove('show-register');
+          } else {
+            alert(data.error || 'Sign up failed.');
+          }
+        } catch (_) {
+          alert('Network error during signup.');
+        }
+        return false;
+      }
+
+      window.doLogin = async function doLogin(e) {
+        e?.preventDefault?.();
+        const username = document.getElementById('logUser')?.value || '';
+        const password = document.getElementById('logPass')?.value || '';
+        if (!username || !password) {
+          alert('Enter username and password.');
+          return false;
+        }
+        try {
+          const res = await fetch('/api/api_users.php?action=login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+          });
+          const data = await res.json();
+          if (data.success) {
+            localStorage.setItem('userId', data.user.id);
+            if (data.user?.username) localStorage.setItem('userName', data.user.username);
+            showHome();
+          } else {
+            alert(data.error || 'Login failed');
+          }
+        } catch (_) {
+          alert('Network error during login.');
+        }
+        return false;
+      }
+    });
+  </script>
+</body>
+</html>
