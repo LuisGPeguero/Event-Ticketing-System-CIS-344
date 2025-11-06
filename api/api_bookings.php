@@ -43,22 +43,60 @@ if ($method == 'GET') {
 } elseif ($method == 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
     if (isset($data['user_id'], $data['event_id'], $data['quantity'])) {
-        $user_id = $data['user_id'];
-        $event_id = $data['event_id'];
-        $quantity = $data['quantity'];
-if (!is_int($quantity) || $quantity <= 0) {
+        $user_id = (int)$data['user_id'];
+        $event_id = (int)$data['event_id'];
+        $quantity = (int)$data['quantity'];
+        if ($quantity <= 0) {
             $output = ["success" => false, "error" => "Invalid quantity. Must be a positive number (1 or more)."];
             http_response_code(400);
         } else {
-            $stmt = $conn->prepare("INSERT INTO bookings (user_id, event_id, quantity) VALUES (?, ?, ?)");
-            $stmt->bind_param("iii", $user_id, $event_id, $quantity);
+            // Use a transaction to check availability and update atomically
+            $conn->begin_transaction();
 
-            if ($stmt->execute()) {
-                $output = ["success" => true, "message" => "Booking successful!"];
-            } else {
-                $output = ["success" => false, "error" => $stmt->error];
-            }
+            // Lock the event row for update
+            $stmt = $conn->prepare("SELECT tickets_available FROM events WHERE id = ? FOR UPDATE");
+            $stmt->bind_param("i", $event_id);
+            $stmt->execute();
+            $stmt->bind_result($tickets_available);
+            $found = $stmt->fetch();
             $stmt->close();
+
+            if (!$found) {
+                $conn->rollback();
+                $output = ["success" => false, "error" => "Event not found."];
+                http_response_code(404);
+            } elseif ($quantity > (int)$tickets_available) {
+                $conn->rollback();
+                $output = ["success" => false, "error" => "Not enough tickets available."];
+                http_response_code(409);
+            } else {
+                // Insert booking
+                $stmt = $conn->prepare("INSERT INTO bookings (user_id, event_id, quantity) VALUES (?, ?, ?)");
+                $stmt->bind_param("iii", $user_id, $event_id, $quantity);
+                if (!$stmt->execute()) {
+                    $err = $stmt->error;
+                    $stmt->close();
+                    $conn->rollback();
+                    $output = ["success" => false, "error" => $err ?: "Failed to create booking."];
+                    http_response_code(500);
+                } else {
+                    $stmt->close();
+                    // Decrement tickets
+                    $stmt = $conn->prepare("UPDATE events SET tickets_available = tickets_available - ? WHERE id = ?");
+                    $stmt->bind_param("ii", $quantity, $event_id);
+                    $ok = $stmt->execute();
+                    $affected = $stmt->affected_rows;
+                    $stmt->close();
+                    if (!$ok || $affected !== 1) {
+                        $conn->rollback();
+                        $output = ["success" => false, "error" => "Failed to update ticket availability."];
+                        http_response_code(500);
+                    } else {
+                        $conn->commit();
+                        $output = ["success" => true, "message" => "Booking successful!"];
+                    }
+                }
+            }
         }
     } else {
         $output = ["success" => false, "error" => "Invalid data. 'user_id', 'event_id', and 'quantity' are required."];
