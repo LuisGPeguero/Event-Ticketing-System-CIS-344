@@ -46,13 +46,13 @@ Note: The default database credentials in api/db_connect.php are set to root wit
 
 ## Part 2: Application Usage
 
-Open the Application:
+**Open the Application:**
 
 Open your web browser and navigate to the project's URL on your local server.
 
 This will typically be: http://localhost/Event-Ticketing-System-CIS-344/login.html
 
-Register an Account:
+**Register an Account:**
 
 On the "Sign In" form, click the "Register" link at the bottom.
 
@@ -60,19 +60,19 @@ Fill in your desired Username, Email, and Password.
 
 Click the "Register" button. You will be returned to the Sign In form.
 
-Sign In:
+**Sign In:**
 
 Enter the Username and Password you just registered.
 
 Click the "Sign In" button.
 
-Browse Events:
+**Browse Events:**
 
 You will now see the "Events" home page.
 
 Scroll through the list of available events, which are displayed as cards.
 
-Purchase Tickets:
+**Purchase Tickets:**
 
 Click on any event card you are interested in.
 
@@ -82,7 +82,7 @@ Enter the desired quantity (e.g., "2").
 
 Click the "Buy Tickets" button. You will receive an alert confirming your booking.
 
-View Your Bookings:
+**View Your Bookings:**
 
 On the main "Events" page, click the "My Bookings" button.
 
@@ -90,6 +90,6 @@ A "My Bookings" panel will appear, listing all the events you have successfully 
 
 Click "Close" to hide the panel.
 
-Sign Out:
+**Sign Out:**
 
 To log out, click the "Sign Out" button at the top right of the page. You will be returned to the "Sign In" screen.
